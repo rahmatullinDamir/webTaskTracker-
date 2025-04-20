@@ -55,7 +55,7 @@ export function removeFromDeleteQueue(taskId) {
 }
 export async function checkServerAvailability() {
     try {
-        const response = await fetch("http://localhost:8080/tasks/health", { method: "GET" });
+        const response = await fetch(API_URL + "/health", { method: "GET" });
         if (response.ok) {
             return true;
         }

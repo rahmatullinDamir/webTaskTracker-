@@ -2,8 +2,21 @@ import * as server from "./serverScript.js";
 import * as local from "./localStorageScript.js";
 
 let isServerAvailable = false;
+
+function updateSyncStatus(isServerAvailable) {
+    const syncIcon = document.getElementById("sync-icon");
+    if (isServerAvailable) {
+        syncIcon.textContent = "✅";
+        syncIcon.style.color = "green";
+    } else {
+        syncIcon.textContent = "🔄";
+        syncIcon.style.color = "red";
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     isServerAvailable = await server.checkServerAvailability();
+    updateSyncStatus(isServerAvailable);
 
     if (isServerAvailable) {
         try {
@@ -33,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             isServerAvailable = false;
             console.log("Сервер недоступен.");
         }
+        updateSyncStatus(isServerAvailable);
     }, 5000);
 
     document.getElementById("task-form").addEventListener("submit", async (e) => {
@@ -56,6 +70,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             local.addTaskToLocalStorage(task);
             server.addToSyncQueue(task);
 
+            let priority = new Map([['HIGH', 'Высокий'],
+                ['MEDIUM', 'Средний'], ["LOW", "Низкий"]]);
+            let status = new Map([['PENDING', 'В ожидании'],
+                ["IN_PROGRESS", "В ходе выполнения"], ["COMPLETED", "Выполнено"]]);
+
+            task.status = status.get(task.status);
+            task.priority = priority.get(task.priority);
             addTaskToDOM(task);
             const errorMessage = document.getElementById("error-message");
             const error = document.createElement("p");
