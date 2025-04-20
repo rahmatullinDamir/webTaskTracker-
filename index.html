@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task tracker</title>
+    <link rel="stylesheet" href="styles/style.css">
+    <script type="module" src="js/mainScript.js"></script>
+</head>
+<body>
+<div class="main">
+    <h1>Task tracker</h1>
+    <div id="sync-status">Синхронизация: <span id="sync-icon">↺</span></div>
+    <div id="task-tracker">
+        <form id = "task-form">
+            <label for="task_name">Название задачи</label>
+            <input type="text" name="task_name" id="task_name" required>
+            <textarea name="task_desc" id="task_desc" placeholder="Описание задачи" required></textarea>
+            <label for="task_priority">Приоритет задачи</label>
+            <select name = "priority" id="task_priority">
+                <option value="HIGH">Высокий</option>
+                <option value="MEDIUM">Средний</option>
+                <option value="LOW">Низкий</option>
+            </select>
+            <label for="task_status">Статус задачи</label>
+            <select name = "status" id="task_status">
+                <option value="PENDING">В ожидании</option>
+                <option value="IN_PROGRESS">В ходе выполнения</option>
+                <option value="COMPLETED">Выполнено</option>
+            </select>
+            <input type="date" id ="due-date" required>
+
+            <button type="submit" id="submit_button">Добавить задачу</button>
+        </form>
+    </div>
+    <div id="error-message"></div>
+    <div id="task-list">
+
+    </div>
+</div>
+</body>
+</html>

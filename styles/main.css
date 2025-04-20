@@ -1,0 +1,35 @@
+.main {
+    width: 80%;
+    margin: auto;
+}
+
+h1 {
+    text-align: center;
+}
+
+#task-tracker {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+#sync-status {
+    display: flex;
+    justify-content: center;
+}
+
+#sync-icon {
+    font-size: 30px;
+    text-align: center;
+}
+
+#task-list div {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    transition: transform 0.3s;
+}
+
+#task-list div:hover {
+    transform: scale(1.02);
+}
