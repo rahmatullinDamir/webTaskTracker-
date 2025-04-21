@@ -56,7 +56,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             await server.processUpdateQueue();
             await server.processDeleteQueue();
             await server.processSyncQueue();
-            location.reload();
         } else if (!serverAvailable) {
             isServerAvailable = false;
             console.log("Сервер недоступен.");
@@ -66,14 +65,47 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById("task-form").addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        document.querySelectorAll(".error-message").forEach(el => el.textContent = "");
+
         const name = document.getElementById("task_name").value.trim();
         const description = document.getElementById("task_desc").value.trim();
         const priority = document.getElementById("task_priority").value;
         const dueDate = document.getElementById("due-date").value;
         const status = document.getElementById("task_status").value;
 
-        const errorMessage = document.getElementById("error-message");
-        const error = document.createElement("p");
+        let isValid = true;
+
+        if (!name) {
+            document.getElementById("name-error").textContent = "Название задачи обязательно.";
+            isValid = false;
+        }
+
+        if (!priority) {
+            document.getElementById("priority-error").textContent = "Выберите приоритет.";
+            isValid = false;
+        }
+
+
+        if (!status) {
+            document.getElementById("status-error").textContent = "Выберите статус.";
+            isValid = false;
+        }
+
+
+        const dueDateInput = new Date(dueDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (!dueDate || isNaN(dueDateInput.getTime()) || dueDateInput < today) {
+            document.getElementById("dueDate-error").textContent = "Срок выполнения должен быть в будущем.";
+            isValid = false;
+        }
+
+        if (!isValid) {
+            return;
+        }
+
 
         const task = {name, description, priority, dueDate, status};
 
@@ -86,8 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             server.addToSyncQueue(task);
 
             addTaskToDOM(task);
-            error.textContent = e.message || "Сервер недоступен. Задача сохранена локально.";
-            errorMessage.appendChild(error);
+            alert("Сервер недоступен. Задача сохранена локально.");
         }
     })
 
@@ -112,15 +143,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         task.classList.add("task-item");
         task.innerHTML = `
-            <h3 class="editable" data-field="name">${result.name}</h3>
-            <p class="editable" data-field="description">${result.description}</p>
-            <p>Приоритет: <span class="editable" data-field="priority" data-value="${priorityValue}">${result.priority}</span></p>
-            <p>Статус: <span class="editable" data-field="status" data-value="${statusValue}">${result.status}</span></p>
-            <p>Срок: <span class="editable" data-field="dueDate">${result.dueDate}</span></p>
+            <h3 class="editable" tabindex="0" aria-label="Название задачи" data-field="name">${result.name}</h3>
+            <p class="editable" tabindex="0" aria-label="Описание задачи" data-field="description">${result.description}</p>
+            <p>Приоритет: <span class="editable" aria-label="Приоритет задачи" data-field="priority" tabindex="0" data-value="${priorityValue}">${result.priority}</span></p>
+            <p>Статус: <span class="editable" aria-label="Статус задачи" data-field="status" tabindex="0" data-value="${statusValue}">${result.status}</span></p>
+            <p>Срок: <span class="editable" aria-label="Срок выполнения задачи" tabindex="0" data-field="dueDate">${result.dueDate}</span></p>
             <div class="progress-bar">
-                <div class="progress" id = "progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
+                <div class="progress" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" id = "progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
             </div>
-            <button class="delete-task-btn">Удалить</button>
+            <button tabindex="0" class="delete-task-btn" aria-label="Удалить задачу">Удалить</button>
         `;
 
         task.setAttribute("data-id", result.id || "");
@@ -132,7 +163,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             const taskId = task.getAttribute("data-id");
             try {
                 if (taskId) {
-                    console.log("Задача имеет ID:", taskId);
                     if (isServerAvailable) {
                         const response = await server.deleteTask(taskId);
                         if (!response.ok) {
@@ -246,7 +276,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     element.textContent = newValue || originalValue;
                 }
+                if (e.key === "Escape") {
+                    const input = element.closest(".editable").querySelector("input");
+                    if (input) {
+                        input.blur();
+                    }
+                }
             });
+
         }
     }
 
@@ -280,7 +317,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         (updatedTask.dueDate == null || t.dueDate === updatedTask.dueDate)
                     )
 
-                    console.log(updatedTaskWithId);
                     if ( taskIndexInLocalStorage !== -1 ) {
                         localStorageTasks[taskIndexInLocalStorage] = updatedTaskWithId;
                         local.saveTasksToLocalStorage(localStorageTasks);
@@ -336,7 +372,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         tasks.forEach(task => {
             const taskStatus = task.querySelector("[data-field='status']").getAttribute("data-value");
             const taskPriority = task.querySelector("[data-field='priority']").getAttribute("data-value");
-            console.log(taskStatus + " " + taskPriority);
             const taskDueDate = task.querySelector("[data-field='dueDate']").textContent;
 
             let matchesStatus = statusFilter === "all" || taskStatus === statusFilter;

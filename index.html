@@ -15,28 +15,38 @@
     <div id="task-tracker">
         <form id = "task-form">
             <label for="task_name">Название задачи</label>
-            <input type="text" name="task_name" id="task_name" required>
-            <textarea name="task_desc" id="task_desc" placeholder="Описание задачи" required></textarea>
+            <input type="text" tabindex="1" name="task_name" id="task_name" placeholder="Введите название задачи" required>
+            <small class="error-message" id="name-error"></small>
+
+            <label for ="task_desc">Описание задачи</label>
+            <textarea tabindex="2" name="task_desc" id="task_desc" placeholder="Введите описание задачи" required></textarea>
+
             <label for="task_priority">Приоритет задачи</label>
-            <select name = "priority" id="task_priority" required>
+            <select tabindex="3" name = "priority" id="task_priority" required>
                 <option value="HIGH">Высокий</option>
                 <option value="MEDIUM">Средний</option>
                 <option value="LOW">Низкий</option>
             </select>
+            <small class="error-message" id="priority-error"></small>
+
             <label for="task_status">Статус задачи</label>
-            <select name = "status" id="task_status" required>
+            <select tabindex="4" name = "status" id="task_status" required>
                 <option value="PENDING">В ожидании</option>
                 <option value="IN_PROGRESS">В ходе выполнения</option>
                 <option value="COMPLETED">Выполнено</option>
             </select>
-            <input type="date" id ="due-date" required>
+            <small class="error-message" id="status-error"></small>
 
-            <button type="submit" id="submit_button">Добавить задачу</button>
+            <label for="due-date">Срок выполнения</label>
+            <input tabindex="5" type="date" id="due-date" name="dueDate" required>
+            <small class="error-message" id="dueDate-error"></small>
+
+            <button tabindex="6" type="submit" id="submit_button">Добавить задачу</button>
         </form>
     </div>
     <div id="filters">
         <label for="filter-status">Фильтр по статусу:</label>
-        <select id="filter-status">
+        <select tabindex="7" id="filter-status">
             <option value="all">Все</option>
             <option value="PENDING">В ожидании</option>
             <option value="IN_PROGRESS">В ходе выполнения</option>
@@ -44,7 +54,7 @@
         </select>
 
         <label for="filter-priority">Фильтр по приоритету:</label>
-        <select id="filter-priority">
+        <select tabindex="8" id="filter-priority">
             <option value="all">Все</option>
             <option value="HIGH">Высокий</option>
             <option value="MEDIUM">Средний</option>
@@ -52,12 +62,11 @@
         </select>
 
         <label for="filter-dueDate">Фильтр по сроку:</label>
-        <input type="date" id="filter-dueDate">
+        <input tabindex="9" type="date" id="filter-dueDate">
 
-        <button id="apply-filters">Применить фильтры</button>
-        <button id="reset-filters">Сбросить фильтры</button>
+        <button tabindex="10" id="apply-filters">Применить фильтры</button>
+        <button tabindex="11" id="reset-filters">Сбросить фильтры</button>
     </div>
-    <div id="error-message"></div>
     <div id="task-list">
 
     </div>

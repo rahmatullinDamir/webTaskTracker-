@@ -137,7 +137,7 @@ export async function processSyncQueue() {
             try {
                 const result = await saveTaskToServer(task);
                 localStorageScript.updateTaskInLocalStorage(result);
-                updateTaskInDom(result); // here problem
+                updateTaskInDom(result);
             } catch (error) {
                 console.error("Ошибка при отправке задачи из очереди:", error);
                 return;
@@ -197,8 +197,7 @@ export async function deleteTask(id) {
         console.error(`Ошибка удаления задачи с ID: ${id}`);
         throw new Error(`Ошибка удаления задачи с ID:  ${id}`);
     }
-
-    return Promise.resolve(response.ok);
+    return response;
 }
 
 export function addToUpdateQueue(updatedTask) {
@@ -253,8 +252,6 @@ export async function processUpdateQueue() {
 
         for (const task of updateQueue) {
             try {
-                console.log("TASK:")
-                console.log(task);
                 const response = await updateTaskOnServer(task);
 
                 if (!response.ok) {

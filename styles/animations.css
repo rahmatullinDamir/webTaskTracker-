@@ -28,15 +28,6 @@
     animation: fadeOut 0.3s ease-in-out forwards;
 }
 
-@keyframes highlightChange {
-    0% {
-        background-color: #ffeb3b;
-    }
-    100% {
-        background-color: transparent;
-    }
-}
-
 .editable.changed {
     animation: highlightChange 0.5s ease-in-out;
 }

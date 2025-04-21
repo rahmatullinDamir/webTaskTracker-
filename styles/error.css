@@ -1,4 +1,17 @@
-#error-message {
-    color: #e74c3c;
-    margin-top: 10px;
+.error-message {
+    color: red;
+    font-size: 0.8rem;
+    display: block;
+}
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+    border-color: red;
+}
+
+input:valid,
+select:valid,
+textarea:valid {
+    border-color: green;
 }
