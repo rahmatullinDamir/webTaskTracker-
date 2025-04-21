@@ -14,6 +14,12 @@ function updateSyncStatus(isServerAvailable) {
     }
 }
 
+function escapeHTML(str) {
+    const div = document.createElement("div");
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 function getProgressPercentage(status) {
     switch (status) {
         case "В ожидании":
@@ -145,9 +151,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         task.innerHTML = `
             <h3 class="editable" tabindex="0" aria-label="Название задачи" data-field="name">${result.name}</h3>
             <p class="editable" tabindex="0" aria-label="Описание задачи" data-field="description">${result.description}</p>
-            <p>Приоритет: <span class="editable" aria-label="Приоритет задачи" data-field="priority" tabindex="0" data-value="${priorityValue}">${result.priority}</span></p>
-            <p>Статус: <span class="editable" aria-label="Статус задачи" data-field="status" tabindex="0" data-value="${statusValue}">${result.status}</span></p>
-            <p>Срок: <span class="editable" aria-label="Срок выполнения задачи" tabindex="0" data-field="dueDate">${result.dueDate}</span></p>
+            <p>Приоритет: <span class="editable" aria-label="Приоритет задачи" data-field="priority" tabindex="0" data-value="${priorityValue}">${escapeHTML(result.priority)}</span></p>
+            <p>Статус: <span class="editable" aria-label="Статус задачи" data-field="status" tabindex="0" data-value="${statusValue}">${escapeHTML(result.status)}</span></p>
+            <p>Срок: <span class="editable" aria-label="Срок выполнения задачи" tabindex="0" data-field="dueDate">${escapeHTML(result.dueDate)}</span></p>
             <div class="progress-bar">
                 <div class="progress" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" id = "progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
             </div>
