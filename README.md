@@ -2,7 +2,8 @@
 
 Этот документ содержит подробное описание **Task Manager API**, которое позволяет управлять задачами. API поддерживает операции создания, получения, обновления и удаления задач, а также проверку работоспособности сервера.
 
-Swagger HUB: https://app.swaggerhub.com/apis/DamirRahmatullin/taskTracker/1.0.0 
+- Swagger HUB: https://app.swaggerhub.com/apis/DamirRahmatullin/taskTracker/1.0.0 
+- Руководство пользователя: https://github.com/rahmatullinDamir/webTaskTracker-/blob/main/UserGuide.md
 
 ---
 
