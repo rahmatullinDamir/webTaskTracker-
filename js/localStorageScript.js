@@ -40,14 +40,20 @@ export function addTaskToLocalStorage(task) {
         console.error("Ошибка при добавлении задачи в localStorage:", error);
     }
 }
+
 export function updateTaskInLocalStorage(updatedTask) {
     try {
         const tasks = JSON.parse(localStorage.getItem(keyForLocalStorage)) || [];
-        const index = tasks.findIndex(t => t.name === updatedTask.name && t.description === updatedTask.description);
-        if (index !== -1) {
-            tasks[index] = updatedTask; // Обновляем задачу с новым id
-            localStorage.setItem(keyForLocalStorage, JSON.stringify(tasks));
+
+        const taskIndex = tasks.findIndex(task => task.id === updatedTask.id);
+
+        if (taskIndex !== -1) {
+            tasks[taskIndex] = updatedTask;
+        } else {
+            tasks.push(updatedTask);
         }
+
+        localStorage.setItem(keyForLocalStorage, JSON.stringify(tasks));
     } catch (error) {
         console.error("Ошибка при обновлении задачи в localStorage:", error);
     }

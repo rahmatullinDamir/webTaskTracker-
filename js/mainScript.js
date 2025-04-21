@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (serverAvailable && !isServerAvailable) {
             isServerAvailable = true;
             console.log("Сервер доступен. Начинаем синхронизацию...");
+            await server.processUpdateQueue();
             await server.processDeleteQueue();
             await server.processSyncQueue();
         } else if (!serverAvailable) {
@@ -173,7 +174,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             select.addEventListener("change", async () => {
                 const newValue = select.value;
                 if (newValue && newValue !== originalValue) {
-                    await server.updateTaskField(element.closest(".task-item").getAttribute("data-id"), field, newValue);
+                    await handleTaskUpdate(element, field, newValue);
                 }
                 element.textContent = options.get(newValue);
             });
@@ -184,26 +185,53 @@ document.addEventListener('DOMContentLoaded', async () => {
             element.textContent = "";
             element.appendChild(input);
 
-
             input.focus();
 
             input.addEventListener("blur", async () => {
                 const newValue = input.value.trim();
                 if (newValue && newValue !== originalValue) {
-                    await server.updateTaskField(element.closest(".task-item").getAttribute("data-id"), field, newValue);
+                    await handleTaskUpdate(element, field, newValue);
                 }
                 element.textContent = newValue || originalValue;
+                console.log(getTaskDataFromDOM(element.closest(".task-item")));
             });
 
             input.addEventListener("keydown", async (e) => {
                 if (e.key === "Enter") {
                     const newValue = input.value.trim();
                     if (newValue && newValue !== originalValue) {
-                        await server.updateTaskField(element.closest(".task-item").getAttribute("data-id"), field, newValue);
+                        await handleTaskUpdate(element, field, newValue);
                     }
                     element.textContent = newValue || originalValue;
                 }
             });
+        }
+    }
+
+    async function handleTaskUpdate(element, field, newValue) {
+        const taskElement = element.closest(".task-item");
+        const taskId = taskElement.getAttribute("data-id");
+        const task = getTaskDataFromDOM(taskElement);
+        console.log(task);
+        console.log(taskElement);
+
+        try {
+            if (taskId) {
+                if (isServerAvailable) {
+                    const response = await server.updateTaskField(taskId, field, newValue);
+                    if (!response.ok) {
+                        throw new Error("Не удалось обновить задачу на сервере.");
+                    }
+                } else {
+                    const updatedTask = { ...task, [field]: newValue , id: taskId };
+                    console.log(updatedTask)
+                    local.updateTaskInLocalStorage(updatedTask);
+                    server.addToUpdateQueue(updatedTask);
+                    alert("Сервер недоступен. Изменения будут синхронизированы после восстановления соединения.");
+                }
+            }
+        } catch (error) {
+            console.error("Ошибка при обновлении задачи:", error.message);
         }
     }
 

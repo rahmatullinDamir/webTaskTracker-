@@ -4,6 +4,7 @@ const API_URL = "http://localhost:8080/tasks";
 const keyToLocalStorage = "syncQueue";
 let syncQueue = JSON.parse(localStorage.getItem(keyToLocalStorage)) || [];
 const deleteQueueKey = "deleteQueue";
+const updateQueueKey = "updateQueue";
 
 export async function processDeleteQueue() {
     try {
@@ -166,4 +167,85 @@ export async function deleteTask(id) {
     }
 
     return Promise.resolve(response.ok);
+}
+
+export function addToUpdateQueue(updatedTask) {
+    try {
+        let priority = new Map([['Высокий', 'HIGH'],
+            ['Средний', 'MEDIUM'], ["Низкий", "LOW"]]);
+        let status = new Map([['В ожидании', 'PENDING'],
+            ["В ходе выполнения", "IN_PROGRESS"], ["Выполнено", "COMPLETED"]]);
+
+        updatedTask.status = status.get(updatedTask.status) ? status.get(updatedTask.status) : status;
+        updatedTask.priority = priority.get(updatedTask.priority) ? priority.get(updatedTask.priority) : priority;
+        const updateQueue = JSON.parse(localStorage.getItem(updateQueueKey)) || [];
+
+        const existingTaskIndex = updateQueue.findIndex(task => task.id === updatedTask.id);
+
+        if (existingTaskIndex !== -1) {
+            updateQueue[existingTaskIndex] = updatedTask;
+        } else {
+            updateQueue.push(updatedTask);
+        }
+
+        localStorage.setItem(updateQueueKey, JSON.stringify(updateQueue));
+    } catch (error) {
+        console.error("Ошибка при добавлении задачи в очередь изменений:", error);
+    }
+}
+
+export async function updateTaskOnServer(task) {
+    try {
+        const response = await fetch(API_URL + `/${task.id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(task),
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ошибка при обновлении задачи с ID: ${task.id}`);
+        }
+
+        return response;
+    } catch (error) {
+        console.error("Ошибка при отправке задачи на сервер:", error.message);
+        throw error;
+    }
+}
+
+export async function processUpdateQueue() {
+    try {
+        const updateQueue = JSON.parse(localStorage.getItem(updateQueueKey)) || [];
+
+        if (updateQueue.length === 0) {
+            console.log("Очередь изменений пуста.");
+            return;
+        }
+
+        console.log("Начинаем обработку очереди изменений...");
+
+        for (const task of updateQueue) {
+            try {
+                console.log("TASK:")
+                console.log(task);
+                const response = await updateTaskOnServer(task);
+
+                if (!response.ok) {
+                    throw new Error(`Не удалось обновить задачу с ID: ${task.id}`);
+                }
+
+                console.log(`Задача с ID: ${task.id} успешно обновлена на сервере.`);
+            } catch (error) {
+                console.error(`Ошибка при обновлении задачи с ID: ${task.id}:`, error.message);
+                continue;
+            }
+        }
+
+        localStorage.setItem(updateQueueKey, JSON.stringify([]));
+        console.log("Очередь изменений успешно очищена.");
+    } catch (error) {
+        console.error("Ошибка при обработке очереди изменений:", error.message);
+    }
 }
