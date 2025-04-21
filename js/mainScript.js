@@ -56,6 +56,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             await server.processUpdateQueue();
             await server.processDeleteQueue();
             await server.processSyncQueue();
+            location.reload();
         } else if (!serverAvailable) {
             isServerAvailable = false;
             console.log("Сервер недоступен.");
@@ -117,7 +118,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <p>Статус: <span class="editable" data-field="status" data-value="${statusValue}">${result.status}</span></p>
             <p>Срок: <span class="editable" data-field="dueDate">${result.dueDate}</span></p>
             <div class="progress-bar">
-                <div class="progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
+                <div class="progress" id = "progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
             </div>
             <button class="delete-task-btn">Удалить</button>
         `;
@@ -215,6 +216,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await handleTaskUpdate(element, field, newValue);
                 }
                 element.textContent = options.get(newValue);
+                if (field === "status") {
+                    const progress = document.getElementById("progress");
+                    progress.style.width = `${getProgressPercentage(status.get(newValue))}%`;
+                }
             });
         } else {
             const input = document.createElement("input");
