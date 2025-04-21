@@ -3,6 +3,7 @@ package dev.rahmatullin.tasktrackerbackend.Controllers;
 import dev.rahmatullin.tasktrackerbackend.Dto.TaskDto;
 import dev.rahmatullin.tasktrackerbackend.Dto.TaskForm;
 import dev.rahmatullin.tasktrackerbackend.Services.TaskService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,8 +20,7 @@ public class TaskTrackerRestController {
     private TaskService taskService;
 
     @PostMapping
-    public ResponseEntity<TaskDto> postTask(@RequestBody TaskForm taskForm) {
-        System.out.println(taskForm);
+    public ResponseEntity<TaskDto> postTask(@Valid @RequestBody TaskForm taskForm) {
         TaskDto createdTask = taskService.addTask(taskForm);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdTask);
     }
@@ -43,7 +43,7 @@ public class TaskTrackerRestController {
 
     @PutMapping("/{taskId}")
     public ResponseEntity<Void> updateTask(@PathVariable Long taskId,
-                                           @RequestBody TaskForm taskForm) {
+                                           @Valid @RequestBody TaskForm taskForm) {
         boolean isUpdated = taskService.updateTask(taskId, taskForm);
 
         if (isUpdated) {
@@ -67,7 +67,6 @@ public class TaskTrackerRestController {
 
     @DeleteMapping("/{taskId}")
     public ResponseEntity<Void> deleteTask(@PathVariable Long taskId) {
-        System.out.println("Deleting task with ID: " + taskId);
         boolean isDeleted = taskService.deleteTask(taskId);
         if (isDeleted) {
             return ResponseEntity.ok().build();
