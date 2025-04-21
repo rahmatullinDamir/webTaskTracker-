@@ -14,6 +14,19 @@ function updateSyncStatus(isServerAvailable) {
     }
 }
 
+function getProgressPercentage(status) {
+    switch (status) {
+        case "В ожидании":
+            return 0;
+        case "В ходе выполнения":
+            return 50;
+        case "Выполнено":
+            return 100;
+        default:
+            return 0;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     isServerAvailable = await server.checkServerAvailability();
     updateSyncStatus(isServerAvailable);
@@ -71,16 +84,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             local.addTaskToLocalStorage(task);
             server.addToSyncQueue(task);
 
-            let priority = new Map([['HIGH', 'Высокий'],
-                ['MEDIUM', 'Средний'], ["LOW", "Низкий"]]);
-            let status = new Map([['PENDING', 'В ожидании'],
-                ["IN_PROGRESS", "В ходе выполнения"], ["COMPLETED", "Выполнено"]]);
-
-            task.status = status.get(task.status);
-            task.priority = priority.get(task.priority);
             addTaskToDOM(task);
-            const errorMessage = document.getElementById("error-message");
-            const error = document.createElement("p");
             error.textContent = e.message || "Сервер недоступен. Задача сохранена локально.";
             errorMessage.appendChild(error);
         }
@@ -89,22 +93,42 @@ document.addEventListener('DOMContentLoaded', async () => {
     function addTaskToDOM(result) {
         const taskList = document.getElementById("task-list");
         const task = document.createElement("div");
+
+        let priority = new Map([['HIGH', 'Высокий'],
+            ['MEDIUM', 'Средний'], ["LOW", "Низкий"]]);
+        let status = new Map([['PENDING', 'В ожидании'],
+            ["IN_PROGRESS", "В ходе выполнения"], ["COMPLETED", "Выполнено"]]);
+        let priorityReversed = new Map([["Высокий", "HIGH"],
+            ['Средний', 'MEDIUM'], ["Низкий", "LOW"]]);
+        let statusReversed = new Map([["В ожидании", "PENDING"],
+            ["В ходе выполнения", "IN_PROGRESS"], ["Выполнено", "COMPLETED"]]);
+
+        if (status.has(result.status)) result.status = status.get(result.status);
+        if (priority.has(result.priority)) result.priority = priority.get(result.priority);
+
+        const priorityValue = priorityReversed.get(result.priority);
+        const statusValue = statusReversed.get(result.status);
+
         task.classList.add("task-item");
         task.innerHTML = `
             <h3 class="editable" data-field="name">${result.name}</h3>
             <p class="editable" data-field="description">${result.description}</p>
-            <p>Приоритет: <span class="editable" data-field="priority">${result.priority}</span></p>
-            <p>Статус: <span class="editable" data-field="status">${result.status}</span></p>
+            <p>Приоритет: <span class="editable" data-field="priority" data-value="${priorityValue}">${result.priority}</span></p>
+            <p>Статус: <span class="editable" data-field="status" data-value="${statusValue}">${result.status}</span></p>
             <p>Срок: <span class="editable" data-field="dueDate">${result.dueDate}</span></p>
+            <div class="progress-bar">
+                <div class="progress" style="width: ${getProgressPercentage(result.status)}%;"></div>
+            </div>
             <button class="delete-task-btn">Удалить</button>
         `;
+
         task.setAttribute("data-id", result.id || "");
         taskList.appendChild(task);
 
         const deleteButton = task.querySelector(".delete-task-btn");
         deleteButton.addEventListener("click", async () => {
-            const taskId = task.getAttribute("data-id");
 
+            const taskId = task.getAttribute("data-id");
             try {
                 if (taskId) {
                     console.log("Задача имеет ID:", taskId);
@@ -119,11 +143,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
 
-                server.removeFromSyncQueue(getTaskDataFromDOM(task));
+                task.classList.add("removing");
+                setTimeout(() => {
+                    server.removeFromSyncQueue(getTaskDataFromDOM(task));
+                    local.deleteTaskFromLocalStorage(getTaskDataFromDOM(task));
+                    task.remove();
+                }, 300);
 
-                local.deleteTaskFromLocalStorage(getTaskDataFromDOM(task));
-
-                task.remove();
             } catch (error) {
                 console.error("Ошибка при удалении задачи:", error.message);
             }
@@ -145,10 +171,22 @@ document.addEventListener('DOMContentLoaded', async () => {
             dueDate: taskElement.querySelector("[data-field='dueDate']").textContent,
         };
     }
+    function getTaskDataFromDOMWithValue(taskElement) {
+        return {
+            name: taskElement.querySelector("[data-field='name']").textContent,
+            description: taskElement.querySelector("[data-field='description']").textContent,
+            priority: taskElement.querySelector("[data-field='priority']").getAttribute("data-value"),
+            status: taskElement.querySelector("[data-field='status']").getAttribute("data-value"),
+            dueDate: taskElement.querySelector("[data-field='dueDate']").textContent,
+        };
+    }
 
     function makeEditable(element) {
         const field = element.getAttribute("data-field");
         const originalValue = element.textContent;
+
+        element.classList.add("changed");
+        setTimeout(() => element.classList.remove("changed"), 500);
 
         if (field === "status" || field === "priority") {
             const select = document.createElement("select");
@@ -193,7 +231,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     await handleTaskUpdate(element, field, newValue);
                 }
                 element.textContent = newValue || originalValue;
-                console.log(getTaskDataFromDOM(element.closest(".task-item")));
             });
 
             input.addEventListener("keydown", async (e) => {
@@ -208,32 +245,121 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+
     async function handleTaskUpdate(element, field, newValue) {
         const taskElement = element.closest(".task-item");
-        const taskId = taskElement.getAttribute("data-id");
-        const task = getTaskDataFromDOM(taskElement);
-        console.log(task);
-        console.log(taskElement);
+        const id = taskElement.getAttribute("data-id");
+        const updatedTask = getTaskDataFromDOMWithValue(taskElement);
+        updatedTask[field] = newValue;
 
         try {
-            if (taskId) {
+            if (id) {
                 if (isServerAvailable) {
-                    const response = await server.updateTaskField(taskId, field, newValue);
-                    if (!response.ok) {
-                        throw new Error("Не удалось обновить задачу на сервере.");
+                    try {
+                        await server.updateTaskField(id, field, newValue);
                     }
+                    catch (error) {
+                        console.error(error);
+                    }
+
                 } else {
-                    const updatedTask = { ...task, [field]: newValue , id: taskId };
-                    console.log(updatedTask)
-                    local.updateTaskInLocalStorage(updatedTask);
-                    server.addToUpdateQueue(updatedTask);
+                    const updatedTaskWithId = {...updatedTask, id}
+
+                    updatedTask[field] = null;
+                    const localStorageTasks = local.loadTasksFromLocalStorage();
+                    const taskIndexInLocalStorage = localStorageTasks.findIndex(t =>
+                        (updatedTask.name == null || t.name === updatedTask.name) &&
+                        (updatedTask.description == null || t.description === updatedTask.description) &&
+                        (updatedTask.priority == null || t.priority === updatedTask.priority) &&
+                        (updatedTask.status == null || t.status === updatedTask.status) &&
+                        (updatedTask.dueDate == null || t.dueDate === updatedTask.dueDate)
+                    )
+
+                    console.log(updatedTaskWithId);
+                    if ( taskIndexInLocalStorage !== -1 ) {
+                        localStorageTasks[taskIndexInLocalStorage] = updatedTaskWithId;
+                        local.saveTasksToLocalStorage(localStorageTasks);
+                    }
+
+                    server.addToUpdateQueue(updatedTaskWithId);
                     alert("Сервер недоступен. Изменения будут синхронизированы после восстановления соединения.");
+                }
+            } else {
+                const tasksInSyncQueue = server.syncQueue;
+                const localStorageTasks = local.loadTasksFromLocalStorage();
+                updatedTask[field] = null;
+
+                const taskIndex = tasksInSyncQueue.findIndex(t =>
+                    (updatedTask.name == null || t.name === updatedTask.name) &&
+                    (updatedTask.description == null || t.description === updatedTask.description) &&
+                    (updatedTask.priority == null || t.priority === updatedTask.priority) &&
+                    (updatedTask.status == null || t.status === updatedTask.status) &&
+                    (updatedTask.dueDate == null || t.dueDate === updatedTask.dueDate)
+                );
+
+                const taskIndexInLocalStorage = localStorageTasks.findIndex(t =>
+                    (updatedTask.name == null || t.name === updatedTask.name) &&
+                    (updatedTask.description == null || t.description === updatedTask.description) &&
+                    (updatedTask.priority == null || t.priority === updatedTask.priority) &&
+                    (updatedTask.status == null || t.status === updatedTask.status) &&
+                    (updatedTask.dueDate == null || t.dueDate === updatedTask.dueDate)
+                )
+
+                if (taskIndex !== -1 && taskIndexInLocalStorage !== -1) {
+                    updatedTask[field] = newValue;
+                    tasksInSyncQueue[taskIndex] = updatedTask;
+                    localStorageTasks[taskIndexInLocalStorage] = updatedTask;
+                    server.saveSyncQueue(tasksInSyncQueue);
+                    local.saveTasksToLocalStorage(localStorageTasks);
+                    alert("Задача обновлена в очереди синхронизации.");
+                } else {
+                    console.error("Ошибка: Задача не найдена в очереди синхронизации.");
                 }
             }
         } catch (error) {
             console.error("Ошибка при обновлении задачи:", error.message);
         }
     }
+
+    function filterTasks() {
+        const statusFilter = document.getElementById("filter-status").value;
+        const priorityFilter = document.getElementById("filter-priority").value;
+        const dueDateFilter = document.getElementById("filter-dueDate").value;
+
+        const tasks = Array.from(document.querySelectorAll(".task-item"));
+
+        tasks.forEach(task => {
+            const taskStatus = task.querySelector("[data-field='status']").getAttribute("data-value");
+            const taskPriority = task.querySelector("[data-field='priority']").getAttribute("data-value");
+            console.log(taskStatus + " " + taskPriority);
+            const taskDueDate = task.querySelector("[data-field='dueDate']").textContent;
+
+            let matchesStatus = statusFilter === "all" || taskStatus === statusFilter;
+            let matchesPriority = priorityFilter === "all" || taskPriority === priorityFilter;
+            let matchesDueDate = !dueDateFilter || taskDueDate === dueDateFilter;
+
+            if (matchesStatus && matchesPriority && matchesDueDate) {
+                task.style.display = "block";
+            } else {
+                task.style.display = "none";
+            }
+        });
+    }
+
+    document.getElementById("apply-filters").addEventListener("click", () => {
+        filterTasks();
+    });
+
+    document.getElementById("reset-filters").addEventListener("click", () => {
+        document.getElementById("filter-status").value = "all";
+        document.getElementById("filter-priority").value = "all";
+        document.getElementById("filter-dueDate").value = "";
+
+        const tasks = Array.from(document.querySelectorAll(".task-item"));
+        tasks.forEach(task => {
+            task.style.display = "block";
+        });
+    });
 
 });
 

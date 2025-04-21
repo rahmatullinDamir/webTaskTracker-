@@ -1,0 +1,11 @@
+#sync-status {
+    text-align: center;
+    font-size: 0.9rem;
+    margin-bottom: 20px;
+    color: #666;
+}
+
+#sync-icon {
+    font-size: 1.2rem;
+    transition: color 0.3s ease-in-out;
+}

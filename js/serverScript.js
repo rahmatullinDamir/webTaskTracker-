@@ -2,9 +2,30 @@ import * as localStorageScript from './localStorageScript.js';
 
 const API_URL = "http://localhost:8080/tasks";
 const keyToLocalStorage = "syncQueue";
-let syncQueue = JSON.parse(localStorage.getItem(keyToLocalStorage)) || [];
+export let syncQueue = JSON.parse(localStorage.getItem(keyToLocalStorage)) || [];
 const deleteQueueKey = "deleteQueue";
 const updateQueueKey = "updateQueue";
+
+function getProgressPercentage(status) {
+    switch (status) {
+        case "В ожидании":
+            return 0;
+        case "В ходе выполнения":
+            return 50;
+        case "Выполнено":
+            return 100;
+        default:
+            return 0;
+    }
+}
+
+export function saveSyncQueue(tasks) {
+    try {
+        localStorage.setItem(keyToLocalStorage, JSON.stringify(tasks));
+    } catch (error) {
+        console.error("Ошибка при сохранении очереди синхронизации:", error);
+    }
+}
 
 export async function processDeleteQueue() {
     try {
@@ -24,6 +45,7 @@ export async function processDeleteQueue() {
         console.error("Ошибка при обработке очереди удалений:", error);
     }
 }
+
 export function removeFromSyncQueue(task) {
     try {
         const syncQueue = JSON.parse(localStorage.getItem(keyToLocalStorage)) || [];
@@ -33,6 +55,7 @@ export function removeFromSyncQueue(task) {
         console.error("Ошибка при удалении задачи из очереди синхронизации:", error);
     }
 }
+
 export function addToDeleteQueue(taskId) {
     try {
         const deleteQueue = JSON.parse(localStorage.getItem(deleteQueueKey)) || [];
@@ -54,9 +77,10 @@ export function removeFromDeleteQueue(taskId) {
         console.error("Ошибка при удалении задачи из очереди удалений:", error);
     }
 }
+
 export async function checkServerAvailability() {
     try {
-        const response = await fetch(API_URL + "/health", { method: "GET" });
+        const response = await fetch(API_URL + "/health", {method: "GET"});
         if (response.ok) {
             return true;
         }
@@ -75,23 +99,33 @@ export function addToSyncQueue(task) {
         console.error("Ошибка при добавлении задачи в очередь синхронизации:", error);
     }
 }
-function updateTaskInDOM(updatedTask) {
-    const taskElement = Array.from(document.querySelectorAll(".task-item")).find(task => {
-        const name = task.querySelector("[data-field='name']").textContent;
-        const description = task.querySelector("[data-field='description']").textContent;
-        console.log("NAME" + name);
-        console.log("DESCRIPTIoN" + description);
-        return name === updatedTask.name && description === updatedTask.description;
-    });
 
-    if (taskElement) {
-        taskElement.setAttribute("data-id", updatedTask.id);
+function updateTaskInDom(updatedTask) {
+    const taskElement = document.querySelector(`.task-item[data-id="${updatedTask.id}"]`);
+    if (!taskElement) {
+        console.error("Ошибка: Задача с ID", updatedTask.id, "не найдена в DOM.");
+        return;
+    }
 
-        taskElement.querySelector("[data-field='name']").textContent = updatedTask.name;
-        taskElement.querySelector("[data-field='description']").textContent = updatedTask.description;
-        taskElement.querySelector("[data-field='priority']").textContent = updatedTask.priority;
-        taskElement.querySelector("[data-field='status']").textContent = updatedTask.status;
-        taskElement.querySelector("[data-field='dueDate']").textContent = updatedTask.dueDate;
+    let priorityReversed = new Map([["Высокий", "HIGH"],
+        ['Средний', 'MEDIUM'], ["Низкий", "LOW"]]);
+    let statusReversed = new Map([["В ожидании", "PENDING"],
+        ["В ходе выполнения", "IN_PROGRESS"], ["Выполнено", "COMPLETED"]]);
+
+    taskElement.querySelector("[data-field='name']").textContent = updatedTask.name;
+    taskElement.querySelector("[data-field='description']").textContent = updatedTask.description;
+    taskElement.querySelector("[data-field='priority']").textContent = updatedTask.priority;
+    taskElement.querySelector("[data-field='status']").textContent = updatedTask.status;
+    taskElement.querySelector("[data-field='dueDate']").textContent = updatedTask.dueDate;
+
+
+    taskElement.querySelector("[data-field='priority']").setAttribute("data-value", priorityReversed.get(updatedTask.priority));
+    taskElement.querySelector("[data-field='status']").setAttribute("data-value", statusReversed.get(updatedTask.status));
+
+
+    const progressBar = taskElement.querySelector(".progress");
+    if (progressBar) {
+        progressBar.style.width = `${getProgressPercentage(updatedTask.status)}%`;
     }
 }
 
@@ -103,24 +137,24 @@ export async function processSyncQueue() {
             try {
                 const result = await saveTaskToServer(task);
                 localStorageScript.updateTaskInLocalStorage(result);
-                updateTaskInDOM(result);
+                updateTaskInDom(result); // here problem
             } catch (error) {
                 console.error("Ошибка при отправке задачи из очереди:", error);
                 return;
             }
         }
 
-        // Очищаем очередь после успешной отправки
         localStorage.removeItem(keyToLocalStorage);
     } catch (error) {
         console.error("Ошибка при обработке очереди синхронизации:", error);
     }
 }
+
 export async function fetchAllTasksFromServer() {
     const response = await fetch(API_URL, {
         method: 'GET',
     });
-    if(!response.ok) {
+    if (!response.ok) {
         throw Error(response.statusText);
     }
     return await response.json();
@@ -128,19 +162,17 @@ export async function fetchAllTasksFromServer() {
 
 
 export async function updateTaskField(id, field, value) {
-    try {
-        const response = await fetch(API_URL + "/" + id, {
-            method: "PUT",
-            headers: {"Content-Type": "application/json"},
-            body: JSON.stringify({[field]: value}),
-        });
+    const response = await fetch(API_URL + "/" + id, {
+        method: "PUT",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({[field]: value}),
+    });
 
-        if (!response.ok) {
-            console.error(`Failed to update task field ${field} with value ${value}`);
-        }
-    } catch (error) {
-        console.error(error);
+    if (!response.ok) {
+        console.error(`Ошибка обновления ${field} значение ${value}`);
+        throw new Error(`Ошибка обновления ${field} значение ${value}`);
     }
+    return response.status;
 }
 
 export async function saveTaskToServer(task) {
@@ -150,8 +182,8 @@ export async function saveTaskToServer(task) {
         body: JSON.stringify(task),
     })
     if (!response.ok) {
-        console.error(`Failed to update task field ${task}`);
-        throw new Error(`Failed to update task field ${task}`);
+        console.error(`Ошибка обновления ${task}`);
+        throw new Error(`Ошибка обновления ${task}`);
     }
     return await response.json();
 }
@@ -162,8 +194,8 @@ export async function deleteTask(id) {
     });
 
     if (!response.ok) {
-        console.error(`Failed to delete task ${id}`);
-        throw new Error(`Failed to delete task ${id}`);
+        console.error(`Ошибка удаления задачи с ID: ${id}`);
+        throw new Error(`Ошибка удаления задачи с ID:  ${id}`);
     }
 
     return Promise.resolve(response.ok);
@@ -171,13 +203,6 @@ export async function deleteTask(id) {
 
 export function addToUpdateQueue(updatedTask) {
     try {
-        let priority = new Map([['Высокий', 'HIGH'],
-            ['Средний', 'MEDIUM'], ["Низкий", "LOW"]]);
-        let status = new Map([['В ожидании', 'PENDING'],
-            ["В ходе выполнения", "IN_PROGRESS"], ["Выполнено", "COMPLETED"]]);
-
-        updatedTask.status = status.get(updatedTask.status) ? status.get(updatedTask.status) : status;
-        updatedTask.priority = priority.get(updatedTask.priority) ? priority.get(updatedTask.priority) : priority;
         const updateQueue = JSON.parse(localStorage.getItem(updateQueueKey)) || [];
 
         const existingTaskIndex = updateQueue.findIndex(task => task.id === updatedTask.id);

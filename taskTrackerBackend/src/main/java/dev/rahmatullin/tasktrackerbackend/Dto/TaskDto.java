@@ -24,7 +24,7 @@ public class TaskDto {
     private String status;
     private String dueDate;
 
-    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+//    private static DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public static TaskDto in(Task task) {
         return TaskDto.builder()
@@ -33,7 +33,7 @@ public class TaskDto {
                 .description(task.getDescription())
                 .priority(task.getPriority().toString())
                 .status(task.getStatus().toString())
-                .dueDate(task.getDueDate().format(formatter))
+                .dueDate(String.valueOf(task.getDueDate()))
                 .build();
     }
 

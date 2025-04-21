@@ -1,0 +1,45 @@
+@media (max-width: 768px) {
+    .main {
+        padding: 15px;
+    }
+
+    h1 {
+        font-size: 1.5rem;
+    }
+
+    #task-form {
+        gap: 10px;
+    }
+
+    input, textarea, select {
+        font-size: 0.9rem;
+    }
+
+    button[type="submit"] {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    h1 {
+        font-size: 1.2rem;
+    }
+
+    label {
+        font-size: 0.9rem;
+    }
+
+    input, textarea, select {
+        font-size: 0.8rem;
+        padding: 8px;
+    }
+
+    button[type="submit"] {
+        font-size: 0.8rem;
+        padding: 8px;
+    }
+
+    .task-item {
+        padding: 10px;
+    }
+}

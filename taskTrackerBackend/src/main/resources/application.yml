@@ -2,9 +2,9 @@ spring:
   application:
     name: taskTrackerBackend
   datasource:
-    password: PASTE_YOUR_DB_PASSWORD
-    username: PASTE_YOUR_DB_USERNAME
-    url: PASTE_YOUR_DB_URL
+    password: PASTE_YOUR_PASSWORD
+    username: PASTE_YOUR_USERNAME
+    url: PASTE_YOUR_URL
   jpa:
     show-sql: true
     hibernate:

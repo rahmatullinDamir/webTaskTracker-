@@ -1,4 +1,10 @@
 @import "main.css";
+@import "animations.css";
+@import "error.css";
+@import "synchronizedStatus.css";
+@import "adaptive.css";
+@import "task.css";
+@import "filters.css";
 * {
     box-sizing: border-box;
     margin: 0;
